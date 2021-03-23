@@ -1,0 +1,332 @@
+const clients = [
+  { id: 1, taxNumber: "86620855", name: "HECTOR ACUÑA BOLAÑOS" },
+  { id: 2, taxNumber: "7317855K", name: "JESUS RODRIGUEZ ALVAREZ" },
+  { id: 3, taxNumber: "73826497", name: "ANDRES NADAL MOLINA" },
+  { id: 4, taxNumber: "88587715", name: "SALVADOR ARNEDO MANRIQUEZ" },
+  { id: 5, taxNumber: "94020190", name: "VICTOR MANUEL ROJAS LUCAS" },
+  { id: 6, taxNumber: "99804238", name: "MOHAMED FERRE SAMPER" },
+];
+const accounts = [
+  { clientId: 6, bankId: 1, balance: 15000 },
+  { clientId: 1, bankId: 3, balance: 18000 },
+  { clientId: 5, bankId: 3, balance: 135000 },
+  { clientId: 2, bankId: 2, balance: 5600 },
+  { clientId: 3, bankId: 1, balance: 23000 },
+  { clientId: 5, bankId: 2, balance: 15000 },
+  { clientId: 3, bankId: 3, balance: 45900 },
+  { clientId: 2, bankId: 3, balance: 19000 },
+  { clientId: 4, bankId: 3, balance: 51000 },
+  { clientId: 5, bankId: 1, balance: 89000 },
+  { clientId: 1, bankId: 2, balance: 1600 },
+  { clientId: 5, bankId: 3, balance: 37500 },
+  { clientId: 6, bankId: 1, balance: 19200 },
+  { clientId: 2, bankId: 3, balance: 10000 },
+  { clientId: 3, bankId: 2, balance: 5400 },
+  { clientId: 3, bankId: 1, balance: 9000 },
+  { clientId: 4, bankId: 3, balance: 13500 },
+  { clientId: 2, bankId: 1, balance: 38200 },
+  { clientId: 5, bankId: 2, balance: 17000 },
+  { clientId: 1, bankId: 3, balance: 1000 },
+  { clientId: 5, bankId: 2, balance: 600 },
+  { clientId: 6, bankId: 1, balance: 16200 },
+  { clientId: 2, bankId: 2, balance: 10000 },
+];
+const banks = [
+  { id: 1, name: "SANTANDER" },
+  { id: 2, name: "CHILE" },
+  { id: 3, name: "ESTADO" },
+];
+
+// 0 Arreglo con los ids de clientes
+function listClientsIds() {
+  return clients.map((client) => client.id);
+}
+
+// 1 Arreglo con los ids de clientes ordenados por rut
+
+function listClientsIdsSortByTaxNumber() {
+  return clients
+    .sort((a, b) => (a.taxNumber > b.taxNumber ? 1 : -1))
+    .map((client) => client.id);
+}
+
+// 2 Arreglo con los nombres de cliente ordenados de mayor a menor por la suma TOTAL de los saldos de cada cliente en los bancos que participa.
+function sortClientsTotalBalances() {
+  //retorna el saldo acumulado por cada clientId
+  const balances = accounts.reduce((acc, account) => {
+    acc[account.clientId] = (acc[account.clientId] || 0) + account.balance;
+    return acc;
+  }, {});
+
+  //saldos de mayor a menor
+  const orBalances = Object.keys(balances).sort((a, b) => {
+    return balances[b] - balances[a];
+  });
+
+  //obtener nombres por saldo ordenado
+  const result = [];
+  orBalances.forEach((elemento, index) => {
+    clients.forEach((client) => {
+      if (client.id == elemento) {
+        result[index] = client.name;
+      }
+    });
+  });
+
+  return result;
+}
+
+// 3 Objeto en que las claves sean los nombres de los bancos y los valores un arreglo con los ruts de sus clientes ordenados alfabeticamente por nombre.
+function banksClientsTaxNumbers() {
+  //se cambia el nombre del nombre del banco para eviar conflictos con el nombre del usuario
+  const bankChangeName = banks.map((bank) => ({
+    id: bank.id,
+    bankName: bank.name,
+  }));
+
+  //se instancia un nuevo objeto que contiene a banks - clients y accounts
+  const clientsAccounts = accounts.map((account) => ({
+    ...clients.filter((client) => client.id === account.clientId).shift(),
+    ...bankChangeName.filter((bank) => bank.id === account.bankId).shift(),
+    ...account,
+  }));
+
+  // se ordena alfabeticamente por nombre
+  const orderClientsByName = clientsAccounts.sort(function (a, b) {
+    if (a.name < b.name) {
+      return -1;
+    }
+    if (a.name > b.name) {
+      return 1;
+    }
+    return 0;
+  });
+
+  //instancia un objecto
+  const result = {};
+
+  //se recorre los banks
+  banks.map((bank) => {
+    //se filtran grupos de datos segun el nombre del banco y se muestra solo el taxnumber
+    const getClientsOfBanks = orderClientsByName
+      .filter((client) => {
+        return client.bankName === bank.name;
+      })
+      .map((client) => client.taxNumber);
+
+    //se filtran los grupos de datos no repetidos
+    const uniqueClientsOfBanks = getClientsOfBanks.filter(
+      (client, index, arr) => arr.indexOf(client) === index
+    );
+
+    //se ingresa al objecto con el indice del banco y los taxnumber asociados a dicho banco
+    result[bank.name] = uniqueClientsOfBanks;
+  });
+
+  return result;
+}
+
+// 4 Arreglo ordenado decrecientemente con los saldos de clientes que tengan más de 25.000 en el Banco SANTANDER
+function richClientsBalances() {
+  // busca la id del banco con el nombre santander
+  const idBank = banks
+    .filter((bank) => bank.name == "SANTANDER")
+    .map((bank) => bank.id);
+
+  //filtra las cuentas que tienen mas de 25000 en el banco santander
+  const accountsBank = accounts
+    .filter(
+      (account) => idBank.includes(account.bankId) && account.balance > 25000
+    )
+    .map((account) => account.balance);
+
+  //ordena las cuentas ya filtradas
+  const orderAccounts = accountsBank.sort((a, b) => {
+    if (a.balance < b.balance) {
+      return 1;
+    } else if (a.balance > b.balance) {
+      return -1;
+    }
+    return 0;
+  });
+
+  return orderAccounts;
+}
+
+// 5 Arreglo con ids de bancos ordenados crecientemente por la cantidad TOTAL de dinero que administran.
+
+//devuelve la cantidad total por id de banco
+function banksRankingByTotalBalance() {
+  const balances = accounts.reduce((acc, account) => {
+    acc[account.bankId] = (acc[account.bankId] || 0) + account.balance;
+    return acc;
+  }, {});
+
+  //ordena de menos a mayor
+  const orBalances = Object.keys(balances).sort((a, b) => {
+    return balances[a] - balances[b];
+  });
+
+  return orBalances;
+}
+
+// 6 Objeto en que las claves sean los nombres de los bancos y los valores el número de clientes que solo tengan cuentas en ese banco.
+function banksFidelity() {
+  //se cambia el nombre del nombre del banco para eviar conflictos con el nombre del usuario
+  const bankChangeName = banks.map((bank) => ({
+    id: bank.id,
+    bankName: bank.name,
+  }));
+
+  //se instancia un nuevo objeto que contiene a banks - clients y accounts
+  const clientsAccounts = accounts.map((account) => ({
+    ...clients.filter((client) => client.id === account.clientId).shift(),
+    ...bankChangeName.filter((bank) => bank.id === account.bankId).shift(),
+    ...account,
+  }));
+
+  //instancia un objecto
+  const arrBalance = {};
+  const bankData = {};
+
+  banks.map((bank) => {
+    const getClientsOfBanks = clientsAccounts.filter((client) => {
+      return client.bankName === bank.name;
+    });
+
+    //se filtran los grupos de datos repetidos y se le suma el balance
+    const totalBalanceClients = getClientsOfBanks.reduce(function (
+      arr,
+      client
+    ) {
+      //se crea una variable con bankname y taxnumber para poder verificar la igualdad
+      var key = client.bankName + client.taxNumber;
+
+      // si no existe el array se crea
+      if (!arrBalance[key]) {
+        arrBalance[key] = client;
+        arr.push(arrBalance[key]);
+      } else {
+        arr.pop;
+        //sino se le suma el balance
+        arrBalance[key].bankId = 0;
+      }
+
+      return arr;
+    },
+    []);
+
+    //se filtra a los clientes y luego cuentan para luego ingresarlos al objeto
+    const filterBalanceCLients = totalBalanceClients
+      .filter((client) => client.bankId > 0)
+      .reduce((acc) => acc + 1, 0);
+
+    bankData[bank.name] = filterBalanceCLients;
+  });
+
+  return bankData;
+}
+
+// 7 Objeto en que las claves sean los nombres de los bancos y los valores el id de su cliente con menos dinero.
+function banksPoorClients() {
+  //se cambia el nombre del nombre del banco para eviar conflictos con el nombre del usuario
+  const bankChangeName = banks.map((bank) => ({
+    id: bank.id,
+    bankName: bank.name,
+  }));
+
+  //se instancia un nuevo objeto que contiene a banks - clients y accounts
+  const clientsAccounts = accounts.map((account) => ({
+    ...clients.filter((client) => client.id === account.clientId).shift(),
+    ...bankChangeName.filter((bank) => bank.id === account.bankId).shift(),
+    ...account,
+  }));
+
+  //instancia un objecto
+  const arrBalance = {};
+  const bankData = {};
+
+  //se recorre los banks
+  banks.map((bank) => {
+    //se filtran grupos de datos segun el nombre del banco y se muestra solo el taxnumber
+    const getClientsOfBanks = clientsAccounts.filter((client) => {
+      return client.bankName === bank.name;
+    });
+
+    //se filtran los grupos de datos repetidos y se le suma el balance
+    const totalBalanceClients = getClientsOfBanks.reduce(function (
+      arr,
+      client
+    ) {
+      //se crea una variable con bankname y taxnumber para poder verificar la igualdad
+      var key = client.bankName + client.taxNumber;
+
+      // si no existe el array se crea
+      if (!arrBalance[key]) {
+        arrBalance[key] = client;
+        arr.push(arrBalance[key]);
+      } else {
+        //sino se le suma el balance
+        arrBalance[key].balance += client.balance;
+      }
+
+      return arr;
+    },
+    []);
+    //filta el balance menor
+    const min = Math.min(
+      ...totalBalanceClients.map((client) => client.balance)
+    );
+
+    //filta la id del cliente equivalente al balance menor obtenido
+    const resultado = totalBalanceClients
+      .filter((client) => client.balance === min)
+      .map((client) => client.clientId);
+
+    //se ingresa al objecto con el indice del banco y la id del cliente
+    bankData[bank.name] = resultado[0];
+  });
+
+  return bankData;
+}
+
+// 8 Agregar nuevo cliente con datos ficticios a "clientes" y agregar una cuenta en el BANCO ESTADO con un saldo de 9000 para este nuevo empleado.
+// Luego devolver el lugar que ocupa este cliente en el ranking de la pregunta 2.
+// No modificar arreglos originales para no alterar las respuestas anteriores al correr la solución
+function newClientRanking() {
+  //se agregan los nuevos datos a los objetos
+  addClient = { id: 7, taxNumber: "17478676", name: "JOSE VARGAS FUENTES" };
+  addAccount = { clientId: 7, bankId: 2, balance: 9000 };
+
+  clients.push(addClient);
+  accounts.push(addAccount);
+
+  // devuelve el valor del elemento encontrado
+  const ranking =
+    sortClientsTotalBalances()
+      .map((client) => client)
+      .indexOf(addClient.name) + 1;
+
+  return ranking;
+}
+
+// No modificar, eliminar o alterar cualquier línea de código o comentario de acá para abajo
+// Cualquier cambio hará que su prueba quede invalidada automáticamente
+console.log("Pregunta 0");
+console.log(listClientsIds());
+console.log("Pregunta 1");
+console.log(listClientsIdsSortByTaxNumber());
+console.log("Pregunta 2");
+console.log(sortClientsTotalBalances());
+console.log("Pregunta 3");
+console.log(banksClientsTaxNumbers());
+console.log("Pregunta 4");
+console.log(richClientsBalances());
+console.log("Pregunta 5");
+console.log(banksRankingByTotalBalance());
+console.log("Pregunta 6");
+console.log(banksFidelity());
+console.log("Pregunta 7");
+console.log(banksPoorClients());
+console.log("Pregunta 8");
+console.log(newClientRanking());
